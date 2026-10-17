@@ -1,14 +1,13 @@
-// اختبار مبدئي للتأكد من إقلاع التطبيق.
+// اختبار مبدئي: التطبيق يقلع ويعرض شاشة تسجيل الدخول.
 import 'package:flutter_test/flutter_test.dart';
 
 import 'package:mawjod/main.dart';
 
 void main() {
-  testWidgets('التطبيق يقلع ويعرض الاسم', (WidgetTester tester) async {
+  testWidgets('شاشة الدخول تظهر عند الإقلاع', (WidgetTester tester) async {
     await tester.pumpWidget(const MawjodApp());
-    await tester.pumpAndSettle();
 
     expect(find.text('موجود'), findsWidgets);
-    expect(find.text('البيئة جاهزة ✅'), findsOneWidget);
+    expect(find.text('تسجيل الدخول'), findsWidgets);
   });
 }

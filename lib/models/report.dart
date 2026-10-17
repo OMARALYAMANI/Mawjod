@@ -1,5 +1,3 @@
-import 'package:cloud_firestore/cloud_firestore.dart';
-
 /// نوع البلاغ: مفقود أو موجود.
 enum ReportType {
   lost, // مفقود
@@ -14,15 +12,19 @@ enum ReportType {
 /// حالة البلاغ.
 enum ReportStatus {
   open, // مفتوح
-  resolved; // تم الحل
+  resolved; // تم العثور عليه
 
-  String get label => this == ReportStatus.open ? 'مفتوح' : 'تم الحل';
+  String get label =>
+      this == ReportStatus.open ? 'مفتوح' : 'تم العثور عليه';
 
   static ReportStatus fromString(String value) =>
       value == 'resolved' ? ReportStatus.resolved : ReportStatus.open;
 }
 
 /// نموذج البلاغ عن غرض مفقود أو موجود.
+///
+/// نموذج Dart نقي حتى يعمل في أي منصة بدون باك-إند.
+/// ستُضاف دوال التحويل من/إلى Firestore في طبقة الخدمات (services) في المرحلة 3.
 class Report {
   final String id;
   final ReportType type;
@@ -30,7 +32,7 @@ class Report {
   final String title; // اسم/وصف المنتج
   final String building; // المبنى/الموقع
   final String notes; // ملاحظات
-  final String imageUrl; // رابط الصورة في Storage
+  final String imageUrl; // رابط/مسار الصورة
   final ReportStatus status;
   final String ownerId;
   final String ownerName;
@@ -52,6 +54,21 @@ class Report {
     required this.createdAt,
   });
 
+  Report copyWith({ReportStatus? status}) => Report(
+        id: id,
+        type: type,
+        category: category,
+        title: title,
+        building: building,
+        notes: notes,
+        imageUrl: imageUrl,
+        status: status ?? this.status,
+        ownerId: ownerId,
+        ownerName: ownerName,
+        ownerPhone: ownerPhone,
+        createdAt: createdAt,
+      );
+
   Map<String, dynamic> toMap() => {
         'type': type.name,
         'category': category,
@@ -63,25 +80,22 @@ class Report {
         'ownerId': ownerId,
         'ownerName': ownerName,
         'ownerPhone': ownerPhone,
-        'createdAt': Timestamp.fromDate(createdAt),
+        'createdAt': createdAt.toIso8601String(),
       };
 
-  factory Report.fromDoc(DocumentSnapshot<Map<String, dynamic>> doc) {
-    final map = doc.data() ?? <String, dynamic>{};
-    return Report(
-      id: doc.id,
-      type: ReportType.fromString((map['type'] ?? 'lost') as String),
-      category: (map['category'] ?? '') as String,
-      title: (map['title'] ?? '') as String,
-      building: (map['building'] ?? '') as String,
-      notes: (map['notes'] ?? '') as String,
-      imageUrl: (map['imageUrl'] ?? '') as String,
-      status: ReportStatus.fromString((map['status'] ?? 'open') as String),
-      ownerId: (map['ownerId'] ?? '') as String,
-      ownerName: (map['ownerName'] ?? '') as String,
-      ownerPhone: (map['ownerPhone'] ?? '') as String,
-      createdAt:
-          (map['createdAt'] as Timestamp?)?.toDate() ?? DateTime.now(),
-    );
-  }
+  factory Report.fromMap(String id, Map<String, dynamic> map) => Report(
+        id: id,
+        type: ReportType.fromString((map['type'] ?? 'lost') as String),
+        category: (map['category'] ?? '') as String,
+        title: (map['title'] ?? '') as String,
+        building: (map['building'] ?? '') as String,
+        notes: (map['notes'] ?? '') as String,
+        imageUrl: (map['imageUrl'] ?? '') as String,
+        status: ReportStatus.fromString((map['status'] ?? 'open') as String),
+        ownerId: (map['ownerId'] ?? '') as String,
+        ownerName: (map['ownerName'] ?? '') as String,
+        ownerPhone: (map['ownerPhone'] ?? '') as String,
+        createdAt: DateTime.tryParse((map['createdAt'] ?? '') as String) ??
+            DateTime.now(),
+      );
 }
