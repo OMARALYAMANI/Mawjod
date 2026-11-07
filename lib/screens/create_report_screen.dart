@@ -22,6 +22,7 @@ class _CreateReportScreenState extends State<CreateReportScreen> {
   ReportType _type = ReportType.lost;
   String? _category;
   String? _building;
+  bool _unsureLocation = false; // لست متأكداً من المكان
   bool _photoAdded = false; // محاكاة إرفاق صورة
   bool _submitting = false;
 
@@ -35,17 +36,15 @@ class _CreateReportScreenState extends State<CreateReportScreen> {
   Future<void> _submit() async {
     if (!_formKey.currentState!.validate()) return;
     setState(() => _submitting = true);
-    await Future.delayed(const Duration(milliseconds: 900)); // محاكاة الرفع
-    if (!mounted) return;
-
     final state = context.read<AppState>();
     final user = state.currentUser!;
-    state.addReport(Report(
+    await state.addReport(Report(
       id: 'r${DateTime.now().millisecondsSinceEpoch}',
       type: _type,
       category: _category!,
       title: _titleCtrl.text.trim(),
-      building: _building!,
+      building: _building ?? '',
+      approximateLocation: _unsureLocation,
       notes: _notesCtrl.text.trim(),
       imageUrl: '',
       status: ReportStatus.open,
@@ -152,16 +151,46 @@ class _CreateReportScreenState extends State<CreateReportScreen> {
             ),
             const SizedBox(height: 16),
 
-            // المبنى
+            // مفتاح: لست متأكداً من المكان
+            Container(
+              decoration: BoxDecoration(
+                color: _unsureLocation
+                    ? AppTheme.primary.withValues(alpha: 0.06)
+                    : null,
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(color: Colors.grey.shade300),
+              ),
+              child: SwitchListTile(
+                value: _unsureLocation,
+                onChanged: (v) => setState(() => _unsureLocation = v),
+                title: const Text('لست متأكداً من المكان بالضبط'),
+                subtitle: const Text(
+                    'اختر أقرب مكان تتوقّعه (اختياري)، أو اتركه فارغاً.',
+                    style: TextStyle(fontSize: 12)),
+                contentPadding:
+                    const EdgeInsets.symmetric(horizontal: 12),
+              ),
+            ),
+            const SizedBox(height: 12),
+
+            // المبنى (إجباري عادةً، واختياري عند عدم التأكد)
             DropdownButtonFormField<String>(
               initialValue: _building,
               isExpanded: true,
-              decoration: const InputDecoration(labelText: 'المبنى / الموقع'),
+              decoration: InputDecoration(
+                labelText: _unsureLocation
+                    ? 'أقرب مكان أتوقّعه (اختياري)'
+                    : 'المبنى / الموقع',
+                prefixIcon: Icon(_unsureLocation
+                    ? Icons.help_outline
+                    : Icons.place_outlined),
+              ),
               items: kBuildings
                   .map((b) => DropdownMenuItem(value: b, child: Text(b)))
                   .toList(),
               onChanged: (v) => setState(() => _building = v),
-              validator: (v) => v == null ? 'اختر المبنى' : null,
+              validator: (v) =>
+                  (!_unsureLocation && v == null) ? 'اختر المبنى' : null,
             ),
             const SizedBox(height: 16),
 

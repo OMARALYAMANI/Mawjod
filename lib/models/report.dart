@@ -30,7 +30,8 @@ class Report {
   final ReportType type;
   final String category; // نوع الصنف
   final String title; // اسم/وصف المنتج
-  final String building; // المبنى/الموقع
+  final String building; // المبنى/الموقع (قد يكون فارغاً إذا غير محدّد)
+  final bool approximateLocation; // المكان تقريبي/غير مؤكد
   final String notes; // ملاحظات
   final String imageUrl; // رابط/مسار الصورة
   final ReportStatus status;
@@ -45,6 +46,7 @@ class Report {
     required this.category,
     required this.title,
     required this.building,
+    this.approximateLocation = false,
     required this.notes,
     required this.imageUrl,
     required this.status,
@@ -60,6 +62,7 @@ class Report {
         category: category,
         title: title,
         building: building,
+        approximateLocation: approximateLocation,
         notes: notes,
         imageUrl: imageUrl,
         status: status ?? this.status,
@@ -74,6 +77,7 @@ class Report {
         'category': category,
         'title': title,
         'building': building,
+        'approximateLocation': approximateLocation,
         'notes': notes,
         'imageUrl': imageUrl,
         'status': status.name,
@@ -89,6 +93,7 @@ class Report {
         category: (map['category'] ?? '') as String,
         title: (map['title'] ?? '') as String,
         building: (map['building'] ?? '') as String,
+        approximateLocation: (map['approximateLocation'] ?? false) as bool,
         notes: (map['notes'] ?? '') as String,
         imageUrl: (map['imageUrl'] ?? '') as String,
         status: ReportStatus.fromString((map['status'] ?? 'open') as String),

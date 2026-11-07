@@ -111,7 +111,7 @@ class _MyReportTileState extends State<_MyReportTile> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   _info(Icons.category_outlined, 'الصنف', r.category),
-                  _info(Icons.place_outlined, 'الموقع', r.building),
+                  _info(Icons.place_outlined, 'الموقع', locationLabel(r)),
                   _info(Icons.notes_outlined, 'الملاحظات',
                       r.notes.isEmpty ? 'لا توجد ملاحظات' : r.notes),
                 ],

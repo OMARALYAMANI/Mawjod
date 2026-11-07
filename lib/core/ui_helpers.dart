@@ -94,6 +94,12 @@ class StatusBadge extends StatelessWidget {
   }
 }
 
+/// نص الموقع: المبنى، أو «غير محدّد» إن كان فارغاً، مع «(غير مؤكد)» للموقع التقريبي.
+String locationLabel(Report r) {
+  final base = r.building.isEmpty ? 'المكان غير محدّد' : r.building;
+  return r.approximateLocation ? '$base (غير مؤكد)' : base;
+}
+
 /// نص "منذ كذا" مبسّط بالعربية.
 String timeAgo(DateTime date) {
   final d = DateTime.now().difference(date);

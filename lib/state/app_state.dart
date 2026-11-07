@@ -1,70 +1,96 @@
 import 'package:flutter/foundation.dart';
 
-import '../core/constants.dart';
-import '../data/mock_data.dart';
 import '../models/app_user.dart';
 import '../models/report.dart';
+import '../repositories/auth_repository.dart';
+import '../repositories/report_repository.dart';
 
-/// الحالة المشتركة للتطبيق (shared state) باستخدام ChangeNotifier + Provider.
+/// الحالة المشتركة للتطبيق (Provider / ChangeNotifier).
 ///
-/// تمسك: المستخدم الحالي، قائمة البلاغات، وحالة التحميل، والفلاتر.
-/// في المرحلة 3 ستُستبدل المصادر الوهمية بـ Firebase Auth و Cloud Firestore.
+/// تعتمد على طبقة المستودعات (Repository) لقراءة/كتابة البيانات،
+/// فيسهل استبدال المصدر المحلي بـ Firebase في Phase 4 دون تغيير الواجهات.
 class AppState extends ChangeNotifier {
+  final AuthRepository auth;
+  final ReportRepository reports;
+
+  AppState({required this.auth, required this.reports});
+
+  // ---- المصادقة ----
   AppUser? _currentUser;
   AppUser? get currentUser => _currentUser;
   bool get isLoggedIn => _currentUser != null;
 
-  final List<Report> _reports = [];
-  bool _isLoadingReports = false;
-  bool get isLoadingReports => _isLoadingReports;
+  bool _bootstrapping = true;
+  bool get bootstrapping => _bootstrapping;
 
-  // فلتر الخلاصة الرئيسية (حسب نوع الصنف).
-  String? categoryFilter; // null = الكل
+  /// يُستدعى عند الإقلاع: يستعيد الجلسة المحفوظة ويحمّل البلاغات إن وُجدت.
+  Future<void> bootstrap() async {
+    _currentUser = await auth.currentUser();
+    if (_currentUser != null) await loadReports();
+    _bootstrapping = false;
+    notifyListeners();
+  }
 
-  /// محاكاة تسجيل الدخول: تتحقق من نطاق الإيميل الجامعي.
-  /// ترمي استثناءً عند فشل التحقق ليعرضه واجهة الشاشة.
   Future<void> signIn({required String email, required String password}) async {
-    await Future.delayed(const Duration(milliseconds: 900)); // محاكاة الشبكة
-    if (!email.trim().toLowerCase().endsWith('@$kUniversityEmailDomain')) {
-      throw Exception('يجب استخدام إيميل الجامعة (@$kUniversityEmailDomain)');
-    }
-    _currentUser = AppUser(
-      uid: 'u1',
-      name: 'Omar Alyamani',
-      email: email.trim(),
-      phone: '0544455667',
-    );
+    _currentUser = await auth.signIn(email: email, password: password);
     await loadReports();
     notifyListeners();
   }
 
-  void signOut() {
+  Future<void> signUp({
+    required String name,
+    required String email,
+    required String phone,
+    required String password,
+  }) async {
+    _currentUser = await auth.signUp(
+        name: name, email: email, phone: phone, password: password);
+    await loadReports();
+    notifyListeners();
+  }
+
+  Future<void> signOut() async {
+    await auth.signOut();
     _currentUser = null;
     _reports.clear();
     notifyListeners();
   }
 
-  /// محاكاة جلب البلاغات مع حالة تحميل.
+  // ---- البلاغات ----
+  final List<Report> _reports = [];
+  bool _isLoadingReports = false;
+  bool get isLoadingReports => _isLoadingReports;
+  String? _reportsError;
+  String? get reportsError => _reportsError;
+
+  String? categoryFilter; // null = الكل
+
+  /// يقرأ البلاغات من المستودع مع حالتَي التحميل والخطأ.
   Future<void> loadReports() async {
     _isLoadingReports = true;
+    _reportsError = null;
     notifyListeners();
-    await Future.delayed(const Duration(milliseconds: 1200));
-    _reports
-      ..clear()
-      ..addAll(kMockReports);
-    _isLoadingReports = false;
-    notifyListeners();
+    try {
+      final list = await reports.fetchReports();
+      _reports
+        ..clear()
+        ..addAll(list);
+    } catch (e) {
+      _reportsError = 'تعذّر تحميل البلاغات. تحقق من الاتصال وحاول مجدداً.';
+    } finally {
+      _isLoadingReports = false;
+      notifyListeners();
+    }
   }
 
-  /// الخلاصة: المفقودات المفتوحة فقط (لم يُعثر عليها بعد)، بعد فلتر الصنف، الأحدث أولاً.
+  /// الخلاصة: المفقودات المفتوحة فقط، بعد فلتر الصنف، الأحدث أولاً.
   List<Report> get feed {
     final list = _reports
         .where((r) =>
             r.status == ReportStatus.open && r.type == ReportType.lost)
-        .where((r) {
-      if (categoryFilter != null && r.category != categoryFilter) return false;
-      return true;
-    }).toList()
+        .where((r) =>
+            categoryFilter == null || r.category == categoryFilter)
+        .toList()
       ..sort((a, b) => b.createdAt.compareTo(a.createdAt));
     return list;
   }
@@ -77,27 +103,25 @@ class AppState extends ChangeNotifier {
     return list;
   }
 
-  /// تحديد فلتر الصنف (null = عرض الكل).
   void setCategoryFilter(String? category) {
     categoryFilter = category;
     notifyListeners();
   }
 
-  void addReport(Report report) {
-    _reports.insert(0, report);
-    notifyListeners();
+  Future<void> addReport(Report report) async {
+    await reports.add(report);
+    await loadReports();
   }
 
-  void resolveReport(String id) {
+  Future<void> resolveReport(String id) async {
     final i = _reports.indexWhere((r) => r.id == id);
-    if (i != -1) {
-      _reports[i] = _reports[i].copyWith(status: ReportStatus.resolved);
-      notifyListeners();
-    }
+    if (i == -1) return;
+    await reports.update(_reports[i].copyWith(status: ReportStatus.resolved));
+    await loadReports();
   }
 
-  void deleteReport(String id) {
-    _reports.removeWhere((r) => r.id == id);
-    notifyListeners();
+  Future<void> deleteReport(String id) async {
+    await reports.delete(id);
+    await loadReports();
   }
 }

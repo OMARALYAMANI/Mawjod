@@ -59,7 +59,7 @@ class ReportDetailsScreen extends StatelessWidget {
                         fontSize: 22, fontWeight: FontWeight.bold)),
                 const SizedBox(height: 16),
                 _InfoRow(Icons.category_outlined, 'الصنف', report.category),
-                _InfoRow(Icons.place_outlined, 'الموقع', report.building),
+                _InfoRow(Icons.place_outlined, 'الموقع', locationLabel(report)),
                 if (report.notes.isNotEmpty)
                   _InfoRow(Icons.notes_outlined, 'ملاحظات', report.notes),
                 const Divider(height: 32),

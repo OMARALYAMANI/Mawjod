@@ -1,80 +1,82 @@
 # موجود (Mawjod) 📍
 
-تطبيق المفقودات لطلاب جامعة الملك فهد للبترول والمعادن (KFUPM).
-مبني بـ **Flutter + Firebase**. يمكّن الطلاب من الإبلاغ عن الأغراض المفقودة/الموجودة ومشاهدة البلاغات لحظياً.
+تطبيق المفقودات لطلاب جامعة الملك فهد للبترول والمعادن (KFUPM) — مبني بـ **Flutter**.
+يُمكّن الطالب من الإبلاغ عن غرض مفقود (صورة + صنف + موقع)، وتصفّح المفقودات، والتواصل مع الناشر مباشرة (اتصال / واتساب).
 
-> 📄 للتفاصيل الكاملة عن المشروع راجع ملف [`BRD.md`](BRD.md).
+> 📄 وثائق المشروع: [`BRD.md`](BRD.md) · تصميم المرحلة 2: `GroupXX_Phase2_Design.docx`
 
 ---
 
-## 🗂️ هيكل المشروع
+## 🎯 الغرض (Project Purpose)
+الطلاب يفقدون أغراضهم في مباني الجامعة ومرافقها، والقنوات الحالية (مجموعة تليجرام) غير فعّالة. «موجود» يجمع بلاغات المفقودات في مكان واحد منظّم وقابل للتصفية، ويربط من فقد غرضاً بمن قد يجده.
 
-```
-lib/
- ├─ core/          # الثوابت (constants) والثيم (theme)
- ├─ models/        # نماذج البيانات (Report, AppUser)
- ├─ services/      # خدمات Firebase (Auth, Firestore, Storage) — قادمة
- ├─ screens/       # الشاشات — قادمة
- ├─ widgets/       # عناصر واجهة قابلة لإعادة الاستخدام — قادمة
- └─ main.dart      # نقطة الانطلاق
-assets/images/     # الصور
-BRD.md             # وثيقة متطلبات العمل
-```
-
-## 📦 المكتبات المثبّتة
-
-| المكتبة | الغرض |
-|---|---|
-| firebase_core | تهيئة Firebase |
-| firebase_auth | تسجيل الدخول بإيميل الجامعة |
-| cloud_firestore | قاعدة البيانات اللحظية للبلاغات |
-| firebase_storage | تخزين صور البلاغات |
-| image_picker | التقاط/اختيار الصور |
-| provider | إدارة الحالة |
-| google_fonts | الخط العربي (Cairo) |
-| cached_network_image | عرض الصور بكفاءة |
-| intl | تنسيق التواريخ |
-| uuid | معرّفات فريدة |
-
-## ▶️ التشغيل
-
+## ▶️ التشغيل والاختبار (Setup / Run)
 ```bash
 flutter pub get
-flutter run
+flutter run        # أو: flutter run -d chrome
+flutter test       # تشغيل اختبارات الوحدة
+```
+**حساب تجريبي جاهز لاختبار الدكتور** (مزروع تلقائياً عند أول تشغيل):
+- الإيميل: `s202249820@kfupm.edu.sa`
+- كلمة المرور: `123456`
+
+يمكن أيضاً إنشاء حساب جديد بأي إيميل ينتهي بـ `@kfupm.edu.sa`.
+
+## ✅ مميزات Phase 3 المنفّذة (Implemented Features)
+- [x] **المصادقة:** تسجيل دخول + إنشاء حساب (مقيّد بإيميل الجامعة) مع **حفظ الجلسة** (تبقى بعد إغلاق التطبيق).
+- [x] **إنشاء بلاغ (تدفّق كامل end-to-end):** إدخال + تحقّق → حفظ في المستودع → ظهور فوري في القائمة.
+- [x] **قائمة المفقودات:** قراءة من المستودع، تصفية حسب الصنف، الأحدث أولاً.
+- [x] **بلاغاتي:** توسيع الكارت للتفاصيل، زر «وجدته» يحوّل الحالة إلى «تم العثور عليه»، وحذف.
+- [x] **تفاصيل البلاغ:** صورة + اتصال (`tel:`) + واتساب (`wa.me`).
+- [x] **خيار «لست متأكداً من المكان»** للموقع التقريبي/غير المحدّد.
+- [x] **حالات الواجهة:** تحميل / فراغ / خطأ (إعادة محاولة) / نجاح / أخطاء تحقّق.
+- [x] **الإشعارات** (شاشة عرض؛ منطق المطابقة مؤجّل لـ Phase 4).
+
+## 🗂️ هيكل المشروع (Organization)
+```
+lib/
+ ├─ core/            constants.dart · theme.dart · ui_helpers.dart
+ ├─ models/          app_user.dart · report.dart
+ ├─ data/            mock_data.dart        # بيانات بذرة أولية
+ ├─ repositories/    report_repository.dart · auth_repository.dart   # طبقة البيانات
+ ├─ state/           app_state.dart        # Provider / ChangeNotifier
+ ├─ screens/         login · signup · root_nav · home_feed · create_report
+ │                   report_details · my_reports · notifications · profile
+ ├─ widgets/         report_card.dart · state_views.dart · kfupm_logo.dart
+ └─ main.dart        # AuthGate + تهيئة المستودعات
+test/                repository_test.dart · widget_test.dart
 ```
 
----
+## 🧱 إدارة الحالة ومصدر البيانات (State & Data)
+- **الحالة:** **Provider (ChangeNotifier)** عبر `AppState` للحالة المشتركة (المستخدم + البلاغات + الفلتر)، و`setState` للحالة المحلية (التحميل، إظهار كلمة المرور، توسيع الكارت).
+- **مصدر البيانات:** **طبقة Repository** (`ReportRepository` / `AuthRepository` كواجهات abstract) مع تطبيق محلي يحفظ البيانات على الجهاز عبر **`shared_preferences`** (persistence حقيقي، تبقى البيانات بعد إغلاق التطبيق).
+- **خطة Phase 4:** استبدال التطبيق المحلي بـ Firebase (Firestore + Auth + Storage) — يكفي إضافة `FirestoreReportRepository` و`FirebaseAuthRepository` دون تغيير بقية التطبيق، لأن كل شيء يعتمد على الواجهات.
 
-## 🔥 خطوة مطلوبة: ربط Firebase
+## 📦 المكتبات (Packages)
+| المكتبة | الغرض |
+|---|---|
+| provider | إدارة الحالة المشتركة |
+| shared_preferences | التخزين المحلي الدائم (طبقة البيانات) |
+| url_launcher | فتح الاتصال (`tel:`) وواتساب (`wa.me`) |
+| image_picker | التقاط/اختيار صورة البلاغ |
+| google_fonts | الخط العربي (Cairo) |
+| intl · uuid | تنسيق التواريخ · معرّفات فريدة |
+| firebase_core · firebase_auth · cloud_firestore · firebase_storage | مُضافة للاستخدام في Phase 4 |
 
-المشروع جاهز برمجياً، لكن يحتاج ربطه بمشروع Firebase **بحسابك** قبل تفعيل تسجيل الدخول والبلاغات. الخطوات (نسوّيها سوا):
+> صور العيّنة في البطاقات روابط تجريبية من `picsum.photos` (لغرض العرض فقط).
 
-1. تثبيت الأدوات:
-   ```bash
-   dart pub global activate flutterfire_cli
-   npm install -g firebase-tools
-   firebase login
-   ```
-2. إنشاء مشروع على [console.firebase.google.com](https://console.firebase.google.com) باسم `mawjod`.
-3. الربط التلقائي (ينشئ `lib/firebase_options.dart`):
-   ```bash
-   flutterfire configure
-   ```
-4. من لوحة Firebase: تفعيل **Authentication → Email/Password**، و**Firestore Database**، و**Storage**.
-
-> بعد هذه الخطوة نبدأ ربط الكود بالمصادقة والبلاغات (المرحلة 2 في خارطة الطريق).
-
----
+## ⚠️ مشاكل معروفة / أعمال Phase 4 (Known Issues)
+- التخزين محلي على الجهاز (غير مشترك بين الأجهزة بعد) — سيُربط بـ Firestore في Phase 4 ليصبح لحظياً.
+- الإشعارات شاشة عرض فقط؛ منطق مطابقة الصنف وإرسال التنبيه يُنفّذ في Phase 4.
+- تعديل بيانات الملف الشخصي وإرفاق صورة فعلية للبلاغ: واجهات جاهزة، التنفيذ الكامل في Phase 4.
 
 ## 🤖 AI-Use Disclosure (SWE 463 policy)
-
-In accordance with the course policy, AI tools were used **only** for learning, debugging, and small suggestions — such as help scaffolding the initial Flutter project and drafting documentation. No complete application or unexplained AI-generated code was submitted, and all team members understand and can explain the code.
+AI tools were used **only** for learning, debugging, and small suggestions (project scaffolding and drafting documentation), as permitted by the course policy. No complete application or unexplained AI-generated code was submitted; every team member understands and can explain the submitted code.
 
 ## 👥 Team
-
-| Name | Role |
-|---|---|
-| Omar Alyamani | Team Lead & Backend (Firebase) |
-| Abdullah Alshahrani | Create-Report feature & UI |
-| Omar Aljughaiman | Feed, filtering & theming |
-| Rakan Alseed | Auth, Profile & documentation |
+| Name | ID | Role |
+|---|---|---|
+| Omar Alyamani | 202249820 | Team Lead — repositories, state, data model |
+| Abdullah Alshahrani | — | Create Report & Report Details (url_launcher) |
+| Omar Aljughaiman | — | Home feed, filtering & Material 3 RTL theme |
+| Rakan Alseed | — | Auth/Signup, Profile, My Reports, Notifications, docs |

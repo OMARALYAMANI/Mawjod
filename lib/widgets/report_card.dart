@@ -71,7 +71,7 @@ class ReportCard extends StatelessWidget {
                         const SizedBox(width: 3),
                         Expanded(
                           child: Text(
-                            report.building,
+                            locationLabel(report),
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
                             style: TextStyle(

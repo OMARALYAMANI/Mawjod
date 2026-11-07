@@ -3,7 +3,6 @@ import 'package:provider/provider.dart';
 
 import '../core/theme.dart';
 import '../state/app_state.dart';
-import 'login_screen.dart';
 
 /// شاشة الحساب: عرض/تعديل الاسم ورقم الجوال وتسجيل الخروج.
 class ProfileScreen extends StatelessWidget {
@@ -57,13 +56,7 @@ class ProfileScreen extends StatelessWidget {
                 ElevatedButton.icon(
                   style: ElevatedButton.styleFrom(
                       backgroundColor: AppTheme.lost),
-                  onPressed: () {
-                    context.read<AppState>().signOut();
-                    Navigator.of(context).pushAndRemoveUntil(
-                      MaterialPageRoute(builder: (_) => const LoginScreen()),
-                      (route) => false,
-                    );
-                  },
+                  onPressed: () => context.read<AppState>().signOut(),
                   icon: const Icon(Icons.logout),
                   label: const Text('تسجيل الخروج'),
                 ),

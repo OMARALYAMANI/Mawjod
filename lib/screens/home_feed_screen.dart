@@ -71,6 +71,12 @@ class HomeFeedScreen extends StatelessWidget {
     if (state.isLoadingReports) {
       return const LoadingView(message: 'جارٍ تحميل المفقودات...');
     }
+    if (state.reportsError != null) {
+      return ErrorView(
+        message: state.reportsError!,
+        onRetry: () => context.read<AppState>().loadReports(),
+      );
+    }
     final items = state.feed;
     if (items.isEmpty) {
       return const EmptyView(

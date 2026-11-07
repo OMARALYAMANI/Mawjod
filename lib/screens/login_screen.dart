@@ -5,7 +5,7 @@ import '../core/constants.dart';
 import '../core/theme.dart';
 import '../state/app_state.dart';
 import '../widgets/kfupm_logo.dart';
-import 'root_nav.dart';
+import 'signup_screen.dart';
 
 /// شاشة تسجيل الدخول / إنشاء حساب.
 /// تتضمّن حالات التحقق: إيميل غير صالح، كلمة مرور فارغة، وحالة التحميل.
@@ -37,10 +37,7 @@ class _LoginScreenState extends State<LoginScreen> {
       await context
           .read<AppState>()
           .signIn(email: _emailCtrl.text, password: _passCtrl.text);
-      if (!mounted) return;
-      Navigator.of(context).pushReplacement(
-        MaterialPageRoute(builder: (_) => const RootNav()),
-      );
+      // عند النجاح تتبدّل الواجهة تلقائياً عبر بوابة المصادقة (AuthGate).
     } catch (e) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
@@ -149,7 +146,12 @@ class _LoginScreenState extends State<LoginScreen> {
                     ),
                     const SizedBox(height: 12),
                     TextButton(
-                      onPressed: _loading ? null : () {},
+                      onPressed: _loading
+                          ? null
+                          : () => Navigator.of(context).push(
+                                MaterialPageRoute(
+                                    builder: (_) => const SignupScreen()),
+                              ),
                       child: const Text('ليس لديك حساب؟ إنشاء حساب جديد'),
                     ),
                   ],
